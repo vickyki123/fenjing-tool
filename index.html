@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>脚本分镜工具</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --line:#e3e6ea; --text:#1b1f24; --muted:#6b7280;
+    --pri:#2563eb; --pri-soft:#eff4ff; --ok:#0f9d58; --warn:#f59e0b; --warn-bg:#fff8e6; --red:#dc2626; --red-bg:#fef2f2;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text)}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10}
+  header h1{font-size:16px;margin:0;font-weight:600;letter-spacing:.5px}
+  header .spacer{flex:1}
+  header select,header button{font:inherit}
+  select,input[type=text],textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:#fff;color:var(--text)}
+  select{cursor:pointer}
+  .badge{font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 16px;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--bg)}
+  .btn.primary{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
+  .btn.primary:hover{filter:brightness(1.05)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  nav{display:flex;gap:4px;padding:10px 20px 0;flex-wrap:wrap}
+  nav button{border:1px solid transparent;background:transparent;padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font:inherit}
+  nav button.active{background:#fff;border-color:var(--line);border-bottom-color:#fff;color:var(--text);font-weight:600;margin-bottom:-1px}
+  main{padding:0 20px 40px}
+  .page{display:none;background:#fff;border:1px solid var(--line);border-radius:0 var(--radius) var(--radius) var(--radius);padding:20px}
+  .page.active{display:block}
+  .drop{border:2px dashed #cbd5e1;border-radius:var(--radius);padding:26px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fbfcfd}
+  .drop:hover,.drop.over{border-color:var(--pri);background:var(--pri-soft);color:var(--pri)}
+  .drop b{color:var(--text)}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:14px 0}
+  .grp{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin:12px 0;background:#fcfcfd}
+  .grp h4{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:600}
+  label.ck{display:inline-flex;align-items:center;gap:6px;margin-right:14px;cursor:pointer}
+  .preview{margin-top:16px;max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:var(--radius)}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top;text-align:left}
+  th{background:#f8fafc;position:sticky;top:0;font-weight:600;z-index:1}
+  td.txt{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.7}
+  .tag{background:var(--pri-soft);color:var(--pri);border-radius:4px;padding:0 4px;font-weight:600}
+  .tag.new{background:#dcfce7;color:#15803d;box-shadow:inset 0 0 0 1px #86efac}
+  del{color:#dc2626;text-decoration:line-through;text-decoration-thickness:1.5px;opacity:.85}
+  mark.hit{background:#ffe58f;padding:0 1px;font-weight:700}
+  mark.rl{background:#ffd7d7;color:#b91c1c;padding:0 2px;border-radius:3px;font-weight:700}
+  .warnrow{background:var(--warn-bg)}
+  .keeprow{background:#f0f7ff}
+  .mountrow{background:#f0fdf4}
+  .hitrow{background:#fff5f5}
+  .empty{color:var(--muted);text-align:center;padding:24px}
+  .kpi{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0;font-size:13px}
+  .kpi span b{color:var(--pri)}
+  .hint{font-size:12px;color:var(--muted);margin:6px 0}
+  .issue{border-left:3px solid var(--red);background:var(--red-bg);padding:8px 12px;border-radius:6px;margin:6px 0;font-size:13px}
+  .okline{border-left:3px solid var(--ok);background:#f0fdf4;padding:8px 12px;border-radius:6px;margin:6px 0;font-size:13px}
+  code.k{background:#f1f5f9;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12px}
+  .tbl-edit input{width:100%}
+  .flex-right{margin-left:auto}
+  .btn.mini{padding:2px 8px;font-size:12px;line-height:1.4;border-radius:6px}
+  .btn.mini.active{background:var(--pri);border-color:var(--pri);color:#fff}
+  .filters{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  .ln{display:inline-block;min-width:20px;color:#9ca3af;font-size:11px;user-select:none;margin-right:4px}
+  .hidden-line{display:none}
+  table.edit input[type=text]{width:100%;padding:4px 8px;font-size:13px}
+  table.edit td{padding:5px 8px}
+  table.edit th{font-size:12px}
+  textarea{width:100%;min-height:92px;font:13px/1.7 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;color:var(--text);resize:vertical}
+  textarea:focus,select:focus,input:focus{outline:2px solid var(--pri-soft);border-color:var(--pri)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 脚本分镜工具</h1>
+  <span class="badge">门店</span>
+  <select id="presetSel"></select>
+  <span class="badge" id="verBadge">规则 v-</span>
+  <div class="spacer"></div>
+  <button class="btn" id="reloadRules">从服务器刷新规则</button>
+  <button class="btn" id="importRules">导入规则文件</button>
+  <input type="file" id="ruleFile" accept=".json" hidden>
+</header>
+
+<nav>
+  <button data-page="addfj" class="active">① 加分镜</button>
+  <button data-page="rmcj">② 去出镜</button>
+  <button data-page="gz">③ 加挂载</button>
+  <button data-page="rmfj">④ 去分镜</button>
+  <button data-page="rep">⑤ 替换表</button>
+  <button data-page="rl">⑥ 红线检测</button>
+  <button data-page="rules">⚙ 规则库</button>
+</nav>
+
+<main>
+
+  <!-- ① 加分镜 -->
+  <section class="page active" id="page-addfj">
+    <div class="drop" id="drop-addfj">拖入 Excel 文件，或<b>点击选择</b><br><span class="hint">支持 .xlsx（自动识别：日期列 / 链接列 / 脚本列）</span></div>
+    <input type="file" id="file-addfj" accept=".xlsx,.xls" hidden>
+    <div id="fjState"></div>
+    <div class="grp">
+      <h4>口播模式</h4>
+      <label class="ck"><input type="radio" name="addfj-mode" value="onscreen" checked> 真人出镜（口播行标【出境】）</label>
+      <label class="ck"><input type="radio" name="addfj-mode" value="off"> 无真人出镜（口播行只标实拍镜头）</label>
+      <div class="row">
+        <label class="ck"><input type="checkbox" id="addfj-onlyEmpty" checked> 只处理没有标注的行（已有标注不动）</label>
+        <label class="ck"><input type="checkbox" id="addfj-markUnknown" checked> 未命中的行标黄留空（人工补）</label>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="run-addfj" disabled>开始加分镜</button>
+      <button class="btn" id="exp-addfj" disabled>导出 Excel</button>
+      <button class="btn" id="fb-addfj" disabled>导出待补清单（反馈用）</button>
+      <span class="hint" id="stat-addfj"></span>
+    </div>
+    <div class="hint" style="margin-top:10px">颜色说明：<span class="tag">蓝色</span> = 文档里原本就有的标注 ｜ <span class="tag new">绿色</span> = <b>本次新加上的</b></div>
+    <div class="filters" id="fjFilters">
+      <span class="hint">只看：</span>
+      <button class="btn mini fbtn active" data-f="all">全部</button>
+      <button class="btn mini fbtn" data-f="new">绿·新加的</button>
+      <button class="btn mini fbtn" data-f="old">蓝·原有的</button>
+      <button class="btn mini fbtn" data-f="none">黄·没标上的</button>
+      <span class="hint" id="fjCount" style="margin-left:8px"></span>
+    </div>
+    <div class="preview" id="pv-addfj"><div class="empty">还没有数据</div></div>
+  </section>
+
+  <!-- ② 去出镜 -->
+  <section class="page" id="page-rmcj">
+    <div class="drop" id="drop-rmcj">拖入 Excel 文件，或<b>点击选择</b><br><span class="hint">把【出境】【出镜】换成实拍镜头（绝不会产出禁用标签）</span></div>
+    <input type="file" id="file-rmcj" accept=".xlsx,.xls" hidden>
+    <div id="rmcjState"></div>
+    <div class="grp">
+      <h4>禁用输出（这些标签永远不会生成）</h4>
+      <div id="banList"></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="run-rmcj" disabled>开始去出镜</button>
+      <button class="btn" id="exp-rmcj" disabled>导出 Excel</button>
+      <span class="hint" id="stat-rmcj"></span>
+    </div>
+    <div class="hint" style="margin-top:10px">颜色说明：<del>红色删除线</del>= 原来的出镜标注 ｜ 后面绿色的是换成的镜头</div>
+    <div class="filters" id="rmcjFilters">
+      <span class="hint">只看：</span>
+      <button class="btn mini fbtn active" data-f="all">全部</button>
+      <button class="btn mini fbtn" data-f="changed">换掉的</button>
+      <button class="btn mini fbtn" data-f="plain">没动的</button>
+      <span class="hint" id="rmcjCount" style="margin-left:8px"></span>
+    </div>
+    <div class="preview" id="pv-rmcj"><div class="empty">还没有数据</div></div>
+  </section>
+
+  <!-- ③ 加挂载 -->
+  <section class="page" id="page-gz">
+    <div class="drop" id="drop-gz">拖入 Excel 排期表，或<b>点击选择</b><br><span class="hint">A列日期 + B列链接 + C列脚本（或两列也可）</span></div>
+    <input type="file" id="file-gz" accept=".xlsx,.xls" hidden>
+    <div id="dateWarn"></div>
+    <div id="gzState"></div>
+    <div class="grp">
+      <h4>挂载规则（每天脚本数 → 第几条挂什么）</h4>
+      <div id="gzRuleView"></div>
+      <div class="hint">写进脚本第一行：<code class="k">【挂私信】</code> / <code class="k">【挂定位】</code></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="run-gz" disabled>开始加挂载</button>
+      <button class="btn" id="exp-gz" disabled>导出 Excel</button>
+      <span class="hint" id="stat-gz"></span>
+    </div>
+    <div class="hint" style="margin-top:10px">绿底行 = 本次加上挂载的（脚本第一行）</div>
+    <div class="filters" id="gzFilters">
+      <span class="hint">只看：</span>
+      <button class="btn mini fbtn active" data-f="all">全部</button>
+      <button class="btn mini fbtn" data-f="mount">已挂载</button>
+      <button class="btn mini fbtn" data-f="plain">未挂载</button>
+      <span class="hint" id="gzCount" style="margin-left:8px"></span>
+    </div>
+    <div class="preview" id="pv-gz"><div class="empty">还没有数据</div></div>
+  </section>
+
+  <!-- ④ 去分镜 -->
+  <section class="page" id="page-rmfj">
+    <div class="drop" id="drop-rmfj">拖入 Excel 文件，或<b>点击选择</b><br><span class="hint">删掉分镜【…】，白名单（bgm/卡点/门牌号等）保留</span></div>
+    <input type="file" id="file-rmfj" accept=".xlsx,.xls" hidden>
+    <div id="rmfjState"></div>
+    <div class="grp">
+      <h4>白名单（这些【…】不会被删）</h4>
+      <div class="hint">完全匹配：<span id="wl-exact"></span></div>
+      <div class="hint">包含关键词：<span id="wl-contains"></span></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="run-rmfj" disabled>开始去分镜</button>
+      <button class="btn" id="exp-rmfj" disabled>导出 Excel</button>
+      <button class="btn" id="fb-rmfj" disabled>导出未知清单（反馈用）</button>
+      <span class="hint" id="stat-rmfj"></span>
+    </div>
+    <div class="hint" style="margin-top:10px">颜色说明：<del>红色删除线</del> = <b>被删掉的标注</b>（预览用来看删了什么，导出的是干净的）｜ 蓝底 = 白名单保留 ｜ 黄底 = 词库没认出来（需确认）</div>
+    <div class="filters" id="rmfjFilters">
+      <span class="hint">只看：</span>
+      <button class="btn mini fbtn active" data-f="all">全部</button>
+      <button class="btn mini fbtn" data-f="deleted">已删掉</button>
+      <button class="btn mini fbtn" data-f="kept">没删掉·白名单</button>
+      <button class="btn mini fbtn" data-f="unknown">没认出来·需确认</button>
+      <span class="hint" id="rmfjCount" style="margin-left:8px"></span>
+    </div>
+    <div class="preview" id="pv-rmfj"><div class="empty">还没有数据</div></div>
+  </section>
+
+  <!-- ⑤ 替换表 -->
+  <section class="page" id="page-rep">
+    <div class="grp">
+      <h4>替换表（一个占位符对应多个实际内容，自动匹配）</h4>
+      <div class="hint">右侧可以直接<b>手打</b>任意内容（打过的会自动记住，下次点输入框就能选），不用回规则库改。</div>
+      <div id="repState"></div>
+      <div id="repTable"></div>
+      <div class="row">
+        <input type="text" id="repNewPh" placeholder="占位符，例如 xx（城市）" style="flex:1.2">
+        <input type="text" id="repNewVals" placeholder="实际内容，多个用 | 分隔，例如 佛山|厦门" style="flex:2.4">
+        <button class="btn" id="repAddBtn">＋ 加一行</button>
+      </div>
+    </div>
+    <div class="drop" id="drop-rep">拖入 Excel 文件，或<b>点击选择</b></div>
+    <input type="file" id="file-rep" accept=".xlsx,.xls" hidden>
+    <div class="row">
+      <button class="btn primary" id="run-rep-fill" disabled>→ 填入实值（xx（城市）→ 厦门）</button>
+      <button class="btn primary" id="run-rep-ph" disabled>← 还原占位符（厦门 → xx（城市））</button>
+      <button class="btn" id="exp-rep" disabled>导出 Excel</button>
+      <span class="hint" id="stat-rep"></span>
+    </div>
+    <div class="row">
+      <label class="ck">范围：<select id="repScope"><option value="all">全部</option><option value="title">仅封面标题</option><option value="body">仅台词</option></select></label>
+      <label class="ck"><input type="checkbox" id="repOnlyOn" checked> 只处理勾选的替换行</label>
+    </div>
+    <div class="hint" style="margin-top:10px">颜色说明：<del>红色删除线</del>= 原来的词 ｜ 后面绿色的是换成的词</div>
+    <div class="filters" id="repFilters">
+      <span class="hint">只看：</span>
+      <button class="btn mini fbtn active" data-f="all">全部</button>
+      <button class="btn mini fbtn" data-f="changed">替换过的</button>
+      <button class="btn mini fbtn" data-f="plain">没变的</button>
+      <span class="hint" id="repCount" style="margin-left:8px"></span>
+    </div>
+    <div class="preview" id="pv-rep"><div class="empty">还没有数据</div></div>
+  </section>
+
+  <!-- ⑥ 红线检测 -->
+  <section class="page" id="page-rl">
+    <div class="drop" id="drop-rl">拖入 Excel 文件，或<b>点击选择</b><br><span class="hint">只标红提示，绝不自动替换</span></div>
+    <input type="file" id="file-rl" accept=".xlsx,.xls" hidden>
+    <div class="grp">
+      <h4>检测分组（开关）</h4>
+      <div id="rlGroups"></div>
+      <div class="hint">默认：厦门画巢开「极限词」组、佛山画巢开「产地词」组（因为两店口径相反）</div>
+    </div>
+    <div class="grp">
+      <h4>词库管理（可自行添加、可导入文件）</h4>
+      <div class="row">
+        <label class="ck">加到分组：<select id="rlTargetGroup"></select></label>
+        <button class="btn" id="rlAddNewGroup">＋ 新建分组</button>
+        <button class="btn" id="rlImportWords">导入词库文件（txt / csv）</button>
+        <input type="file" id="rlWordFile" accept=".txt,.csv,.json" hidden>
+      </div>
+      <textarea id="rlNewWords" spellcheck="false" placeholder="一行一个词，直接粘在这里，例如：&#10;最好&#10;全网最低&#10;顶级&#10;也支持「词,分组」两列：巴西,产地词"></textarea>
+      <div class="row">
+        <button class="btn primary" id="rlAddWords">添加到词库</button>
+        <button class="btn" id="rlClearWords">清空输入框</button>
+        <span class="hint" id="rlWordStat"></span>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="run-rl" disabled>开始检测</button>
+      <button class="btn" id="exp-rl" disabled>导出检测报告</button>
+      <span class="hint" id="stat-rl"></span>
+    </div>
+    <div id="rlResult"></div>
+    <div class="hint" style="margin-top:10px">淡红底行 = 命中红线词的行（词本身也标红）</div>
+    <div class="filters" id="rlFilters">
+      <span class="hint">只看：</span>
+      <button class="btn mini fbtn active" data-f="all">全部</button>
+      <button class="btn mini fbtn" data-f="hit">命中红线</button>
+      <button class="btn mini fbtn" data-f="plain">干净的</button>
+      <span class="hint" id="rlCount" style="margin-left:8px"></span>
+    </div>
+    <div class="preview" id="pv-rl"><div class="empty">还没有数据</div></div>
+  </section>
+
+  <!-- ⚙ 规则库 -->
+  <section class="page" id="page-rules">
+    <div class="grp">
+      <h4>发现规则不够用？这样反馈给我 →</h4>
+      <div class="hint" style="line-height:2">
+        1. 在 <b>① 加分镜</b> 处理完，点 <b>「导出待补清单（反馈用）」</b> —— 会把所有规则没认出来的台词汇总成一张表（含出现次数、来自哪条）<br>
+        2. 你在表里填上 <b>「建议标注」</b>（想标什么镜头），保存<br>
+        3. 把这张表发给维护者（Hermes 对话里直接拖文件进来即可）<br>
+        4. 维护者更新 <code class="k">rules.js</code> → 你刷新页面，新词自动生效（链接不变）<br>
+        <b>④ 去分镜</b> 页也有「导出未知清单」，遇到词库外的【标注】用同样方式反馈。
+      </div>
+    </div>
+    <div class="row">
+      <span class="badge">当前门店：<b id="rulesPresetName"></b></span>
+      <button class="btn" id="saveRulesLocal">保存到本机</button>
+      <button class="btn" id="exportRules">导出规则文件</button>
+      <button class="btn" id="resetRules">恢复默认</button>
+      <span class="flex-right hint">改完保存即生效；导出后可发给同事导入</span>
+    </div>
+    <div class="grp">
+      <h4>① 分镜关键词规则 —— 台词里出现什么词，就标成什么镜头</h4>
+      <div class="hint">从上往下依次匹配，上面那条命中了就不再往下找（想让某条优先，点 ↑ 往上移）。<b>关键词</b>可写多个，用 <code class="k">|</code> 分隔，例如 <code class="k">劳伦斯|大黑牛|花瓣</code>；<b>标成</b>那栏从下拉里选。</div>
+      <table class="edit">
+        <thead><tr><th style="width:46%">关键词（多个用 | 分隔）</th><th style="width:24%">标成（镜头）</th><th>操作</th></tr></thead>
+        <tbody id="ruleBody"></tbody>
+      </table>
+      <div class="row">
+        <input type="text" id="newRulePat" placeholder="关键词，例如：劳伦斯|大黑牛|花瓣" style="flex:3">
+        <select id="newRuleTag" style="flex:1.2"></select>
+        <button class="btn primary" id="addRuleBtn">＋ 加这条规则</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h4>② 产品 / 品牌 / 风格 名单</h4>
+      <div class="hint">一行一个词。<b>产品名单</b>用来数数：一行出现 3 个款名 → 自动标【单品*3】；<b>品牌名单</b>只表示"这是产品行"，不参与数数（避免「Edra 花瓣沙发」被数成 2 个）；<b>风格名单</b>同理 → 【风格*N】。</div>
+      <div class="row" style="align-items:flex-start">
+        <div style="flex:1"><div class="hint">产品 / 款名（参与计数）</div><textarea id="prodList"></textarea></div>
+        <div style="flex:1"><div class="hint">品牌（不参与计数）</div><textarea id="brandList"></textarea></div>
+        <div style="flex:1"><div class="hint">风格词</div><textarea id="styleList"></textarea></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h4>③ 去分镜时"不删"的【…】（白名单）</h4>
+      <div class="hint">左边：模样完全一样才保护；右边：只要包含这些字就保护（例如 <code class="k">bgm</code>、<code class="k">卡点</code>）。</div>
+      <div class="row" style="align-items:flex-start">
+        <div style="flex:1"><div class="hint">完全匹配（一行一个）</div><textarea id="wlExact"></textarea></div>
+        <div style="flex:1"><div class="hint">包含关键词（一行一个）</div><textarea id="wlContains"></textarea></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h4>④ 替换表 —— 城市 / 面积 / 区域 / 标志建筑（双向替换）</h4>
+      <div class="hint">左边写占位符，右边写实际内容（<b>多个用 | 分隔</b>，例如 <code class="k">5000平|1万平|1000平</code>）。「填入实值」把占位符换成右边第一个，或在下拉里选具体某个。</div>
+      <table class="edit"><tbody id="repEditBody"></tbody></table>
+      <div class="row">
+        <input type="text" id="newPh" placeholder="新占位符，例如 xx（城市）" style="flex:1">
+        <input type="text" id="newPhVals" placeholder="实际内容，多个用 | 分隔，例如 佛山|厦门" style="flex:2">
+        <button class="btn" id="addPhBtn">＋ 加一条</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h4>⑤ 挂载规则 —— 当天有几条脚本时，第几条挂什么</h4>
+      <div class="hint">左边填当天脚本条数，右边填对应顺序的挂载标签（<code class="k">【挂私信】</code> / <code class="k">【挂定位】</code>，用逗号分隔）。超过 3 条时按"私信 / 定位"交替。</div>
+      <div id="gzEdit"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn primary" id="saveVisual">保存这些改动（存本机）</button>
+      <button class="btn" id="resetVisual">放弃改动，重新读取</button>
+      <span class="hint" id="visualStat"></span>
+    </div>
+
+    <details class="grp">
+      <summary style="cursor:pointer"><b>高级：直接编辑规则 JSON</b>（改完点下面的按钮；懂格式再用）</summary>
+      <textarea id="rulesJson" spellcheck="false" style="height:38vh;margin-top:10px"></textarea>
+    </details>
+  </section>
+
+</main>
+<footer style="padding:10px 20px 30px;color:#6b7280;font-size:12px">
+  工具版本 <b id="buildVer">-</b> ｜ 规则 <b id="ruleVerFoot">-</b> ｜ 如果功能和描述不符，按 ⌘+Shift+R 强制刷新
+</footer>
+
+<script src="rules.js?v=202609211508"></script>
+<script src="lib/xlsx.full.min.js?v=202609211508"></script>
+<script src="app.js?v=202609211508"></script>
+</body>
+</html>
